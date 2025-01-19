@@ -92,6 +92,8 @@ class ProjectMetadataDto {
     @IsOptional()
     @IsNumber()
     downVotes?: number;
+
+
 }
 
 export class CreateProjectDto {
@@ -110,4 +112,7 @@ export class CreateProjectDto {
     @IsOptional()
     @IsDateString()
     updatedAt?: Date;
+
+    @IsOptional()
+    files?: Express.Multer.File[];
 }

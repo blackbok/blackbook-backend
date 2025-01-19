@@ -1,34 +1,50 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PassportStrategy } from '@nestjs/passport';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Role } from 'src/common/utils/enum/Role';
-import { User } from 'src/model/user/user.model';
-
-
-export interface JwtPayload {
-    username: string;
-    email: string;
-    role: Role;
-}
+import { UserService } from 'src/modules/user/user.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    private readonly logger = new Logger(JwtStrategy.name);
-    constructor(private readonly configService: ConfigService) {
+    private logger = new Logger(JwtStrategy.name);
+    
+    constructor(
+        private configService: ConfigService,
+        private userService: UserService,
+    ) {
         super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                (request) => {
+                    const token = request?.cookies?.accessToken;
+                    this.logger.log(`Extracted Token: ${token}`);
+                    return token;
+                },
+            ]),
             ignoreExpiration: false,
-            secretOrKey: configService.get<string>('app.jwtSecret'),
+            secretOrKey: configService.get('app.jwt_acesstoken_secret'),
         });
+        this.logger.log('JWT Strategy initialized with secret:', !!configService.get('app.jwt_acesstoken_secret'));
     }
 
-    async validate(payload: JwtPayload): Promise<User> {
-        if (!payload || !payload.username || !payload.email) {
-            this.logger.warn('Invalid token payload');
-            throw new UnauthorizedException('Invalid token');
+    async validate(payload: any) {
+        this.logger.debug('Validating payload:', payload);
+        
+        if (!payload.sub && !payload.userId) {
+            this.logger.error('No user ID in payload');
+            throw new UnauthorizedException('Invalid token payload');
         }
-        this.logger.log(`Validated payload: ${JSON.stringify(payload)}`);
-        return payload as User;
+
+        const userId = payload.sub || payload.userId;
+        const user = await this.userService.findById(userId);
+        
+        this.logger.log(`User validated:`, user);
+
+        if (!user) {
+            this.logger.error(`User not found for ID: ${userId}`);
+            throw new UnauthorizedException('User not found');
+        }
+
+        // Return a clean user object
+        return user;
     }
 }
