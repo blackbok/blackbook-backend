@@ -1,11 +1,13 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { Types } from 'mongoose';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { AuthProvider, Role } from 'src/common/utils/enum/Role';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { IUserResponse } from 'src/modules/user/dto/user-response.dto';
+import { IUserResponse } from 'src/interfaces/Iuser.response.interface';
 import { UserService } from 'src/modules/user/user.service';
+import { User, UserDocument } from 'src/model/user/user.model';
 
 
 @Injectable()
@@ -33,20 +35,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     ): Promise<any> {
         const logger = new Logger('GoogleStrategy');
         logger.log("state", request.query.state);
+        logger.log("accessToken", accessToken);
 
         const { state } = request.query;
         if (!state || ![Role.USER, Role.MODERATOR].includes(state as Role)) {
             throw new UnauthorizedException('Invalid role provided');
         }
 
-        const { emails, displayName, id } = profile;
+        const { emails, displayName, id, photos } = profile;
         logger.log("profile", profile);
         const email = emails[0].value;
 
         if (state === Role.USER) {
-            let user: IUserResponse = await this.userService.findByEmail(email) as IUserResponse;
+            let user = await this.userService.findByEmail(email) as IUserResponse;
             if (!user) {
-                console.log("no user found.. creating new user");
+                logger.debug("no user found.. creating new user");
                 let username = email.split('@')[0];
                 const newUser: CreateUserDto = {
                     email: email,
@@ -54,6 +57,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
                     passwordHash: '',
                     role: Role.USER,
                     metadata: {
+                        profilePicUrl: photos[0].value,
                         address: {
                             city: '',
                             state: '',
@@ -66,16 +70,42 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
                         providerId: id,
                         acessToken: accessToken,
                         refreshToken: refreshToken,
-                        acessTokenExpiresAt: new Date(Date.now() + 3600 * 1000),
-                        refreshTokenExpiresAt: new Date(Date.now() + 3600 * 1000),
+                        acessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+                        refreshTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
                     },
                     username: username,
+                    socialMedia: {
+                        linkedIn: '',
+                        github: '',
+                        twitter: '',
+                        instagram: '',
+                        facebook: '',
+                        website: '',
+                        medium: '',
+                        behance: '',
+                    },
 
                 };
                 user = await this.userService.create(newUser)
                 logger.log("new user created.");
                 logger.log("new user", user);
             }
+
+            logger.log("user for acesstoken", user);
+            const accessUser = await this.userService.getAccessToken(user.id.toString()) as User;
+            const { acessToken } = accessUser.authMetadata;
+
+            // check if access token is expired and update it
+            logger.log("old access token", acessToken);
+            logger.log("accessToken", accessToken);
+            logger.log("user.metadata.accessToken !== accessToken", acessToken !== accessToken);
+            if (acessToken !== accessToken && user !== null) {
+                logger.log("updating access token");
+                user = await this.userService.updateAccessToken(new Types.ObjectId(user.id), accessToken) as IUserResponse;
+            }
+
+
+            logger.log("user google strategy", user);
 
             done(null, user);
         } else {

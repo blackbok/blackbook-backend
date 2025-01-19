@@ -1,16 +1,21 @@
-import { Body, Controller, Get, Logger, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { Controller, Get, Logger, Query, Req, Res, UseGuards, UseInterceptors } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AuthGuard } from "@nestjs/passport";
 import { Request, Response } from "express";
 import { Role } from "src/common/utils/enum/Role";
+import { UserService } from "../user/user.service";
+import { JwtService } from "@nestjs/jwt";
+import { IUserResponse } from "src/interfaces/Iuser.response.interface";
 import { User } from "src/model/user/user.model";
-import { AuthService } from "./auth.service";
 
 @Controller('auth')
 export class AuthController {
+    private readonly logger = new Logger(AuthController.name);
     constructor(
         private readonly configService: ConfigService,
-        private readonly authService: AuthService,
+        private readonly userService: UserService,
+        // private readonly jwtService: JwtService
+
     ) { }
 
 
@@ -50,23 +55,55 @@ export class AuthController {
         }
 
         if (role === Role.USER) {
-            const user: User = req.user as User;
-            return this.authService.userGoogleRedirect(user, res);
+            const user = req.user as IUserResponse;
+            logger.log("user", user);
+
+            const newUser: User | null = await this.userService.getAccessToken(user.id.toString());
+            if (!newUser) {
+                return res.status(400).json({ message: 'User not found' });
+            }
+
+            const { acessToken } = newUser.authMetadata
+
+            const cookieSettings = {
+                name: 'access_token',
+                value: acessToken,
+                httpOnly: this.configService.get('app.env') === 'production',
+                secure: this.configService.get('app.env') === 'production',
+                sameSite: this.configService.get('app.env') === 'production' ? 'none' : 'lax',
+                maxAge:  60 * 60 * 1000, // 1 hour
+                path: '/'
+            }
+
+            res.cookie(cookieSettings.name, cookieSettings.value, {
+                httpOnly: cookieSettings.httpOnly,
+                secure: cookieSettings.secure,
+                sameSite: cookieSettings.sameSite as 'strict' | 'lax' | 'none',
+                maxAge: cookieSettings.maxAge,
+                path: cookieSettings.path,
+            });
+
+            const redirectUrl = `${this.configService.get('app.corsOrigin')}/auth/success`;
+            logger.log("redirecting to..", redirectUrl);
+
+            return res.redirect(redirectUrl);
         } else {
             return res.status(400).json({ message: 'Invalid role provided' });
         }
     }
 
-    @Post('/verify-session')
-    verifySession(@Body() body: { sessionToken: string }, @Res() res: any) {
-        const logger = new Logger('VerifySession');
-        logger.log("body", body);
-
-        if (!body.sessionToken) {
-            return res.status(400).json({ message: 'Invalid session token' });
-        }
-
-        return res.status(200).json({ message: 'Session verified' });
+    @Get('verify')
+    async verifyAuth(@Req() req: Request) {
+        const logger = new Logger('VerifyAuth');
+        const { user } = req;
+        logger.log("user", user);
+        return user;
     }
 
+    @Get('logout')
+    async logout(@Res() res: Response) {
+        this.logger.log('Logging out user');
+        res.clearCookie('access_token');
+        return res.status(200).json({ message: 'Logged out successfully' });
+    }
 }

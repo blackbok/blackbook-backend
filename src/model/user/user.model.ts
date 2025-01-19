@@ -11,7 +11,7 @@ export type UserDocument = HydratedDocument<User>;
 export class User {
 
     @Prop({ type: Types.ObjectId, required: false })
-    _id: string;
+    id: string;
     
     @Prop({ required: true })
     name: string;
