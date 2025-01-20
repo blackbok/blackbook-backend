@@ -25,12 +25,12 @@ async function bootstrap() {
   });
 
   app.use(session({
-    secret: 'secret',
+    secret: configService.get<string>('app.sessionSecret') || 'secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true,
-      sameSite: 'none',
+      secure: configService.get<string>('app.env') === 'production',
+      sameSite: configService.get<string>('app.env') === 'production' ? 'none' : 'lax',
       httpOnly: true,
       maxAge: 60 * 60 * 1000 // 1 hour
     },

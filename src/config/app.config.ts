@@ -3,6 +3,7 @@ export interface AppConfig {
     app: {
         port: number;
         env: string;
+        sessionSecret?: string;
         jwt_acesstoken_secret?: string;
         jwt_refreshtoken_secret?: string;
         corsOrigin?: string ;
@@ -49,6 +50,7 @@ export const appConfig = (): AppConfig => ({
     app: {
         port: parseInt(process.env.PORT || '3000', 10),
         env: process.env.NODE_ENV || 'development',
+        sessionSecret: process.env.SESSION_SECRET,
         jwt_acesstoken_secret: process.env.JWT_ACCESSTOKEN_SECRET,
         jwt_refreshtoken_secret: process.env.JWT_REFRESH_SECRET,
         corsOrigin: process.env.CORS_ORIGIN,
