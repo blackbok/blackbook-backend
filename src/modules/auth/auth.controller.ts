@@ -1,12 +1,19 @@
-import { Controller, Get, Logger, Query, Req, Res, UseGuards, UseInterceptors } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { AuthGuard } from "@nestjs/passport";
-import { Request, Response } from "express";
-import { Role } from "src/common/utils/enum/Role";
-import { UserService } from "../user/user.service";
-import { JwtService } from "@nestjs/jwt";
-import { IUserResponse } from "src/interfaces/Iuser.response.interface";
-import { User } from "src/model/user/user.model";
+import {
+    Controller,
+    Get,
+    Logger,
+    Query,
+    Req,
+    Res,
+    UseGuards,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
+import { Request, Response } from 'express';
+import { Role } from 'src/common/utils/enum/Role';
+import { UserService } from '../user/user.service';
+import { IUserResponse } from '../user/dto/user-response.dto';
+import { User } from 'src/model/user/user.model';
 
 @Controller('auth')
 export class AuthController {
@@ -15,27 +22,26 @@ export class AuthController {
         private readonly configService: ConfigService,
         private readonly userService: UserService,
         // private readonly jwtService: JwtService
-
     ) { }
-
 
     @Get('login')
     async googleLogin(@Query('role') query: string, @Res() res: any) {
         const role = query;
         const logger = new Logger('GoogleLogin');
-        logger.log("role", role);
+        logger.log('role', role);
         try {
             if (!role || ![Role.USER, Role.MODERATOR].includes(role as Role)) {
                 return res.status(400).json({ message: 'Invalid role provided' });
             }
 
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+            const authUrl =
+                `https://accounts.google.com/o/oauth2/v2/auth?` +
                 `response_type=code&` +
                 `client_id=${this.configService.get('app.google.clientId')}&` +
                 `redirect_uri=${encodeURIComponent(this.configService.get('app.google.callbackUrl') || '')}&` +
                 `scope=${encodeURIComponent('email profile')}&` +
                 `state=${role}`;
-            logger.log("authUrl", authUrl);
+            // logger.log("authUrl", authUrl);
 
             return res.json({ googleAuthUrl: authUrl });
         } catch (error) {
@@ -46,9 +52,13 @@ export class AuthController {
 
     @Get('google/callback')
     @UseGuards(AuthGuard('google'))
-    async googleAuthRedirect(@Req() req: Request, @Res() res: Response, @Query('state') role: string) {
+    async googleAuthRedirect(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Query('state') role: string,
+    ) {
         const logger = new Logger('GoogleRedirect');
-        logger.log("role", role);
+        logger.log('role', role);
 
         if (!role || ![Role.USER, Role.MODERATOR].includes(role as Role)) {
             return res.status(400).json({ message: 'Invalid role provided' });
@@ -56,24 +66,27 @@ export class AuthController {
 
         if (role === Role.USER) {
             const user = req.user as IUserResponse;
-            logger.log("user", user);
+            // logger.log("user", user);
 
-            const newUser: User | null = await this.userService.getAccessToken(user.id.toString());
+            const newUser: User | null = await this.userService.getAccessToken(
+                user.id.toString(),
+            );
             if (!newUser) {
                 return res.status(400).json({ message: 'User not found' });
             }
 
-            const { acessToken } = newUser.authMetadata
+            const { acessToken } = newUser.authMetadata;
 
             const cookieSettings = {
                 name: 'access_token',
                 value: acessToken,
                 httpOnly: this.configService.get('app.env') === 'production',
                 secure: this.configService.get('app.env') === 'production',
-                sameSite: this.configService.get('app.env') === 'production' ? 'none' : 'lax',
-                maxAge:  60 * 60 * 1000, // 1 hour
-                path: '/'
-            }
+                sameSite:
+                    this.configService.get('app.env') === 'production' ? 'none' : 'lax',
+                maxAge: 60 * 60 * 1000, // 1 hour
+                path: '/',
+            };
 
             res.cookie(cookieSettings.name, cookieSettings.value, {
                 httpOnly: cookieSettings.httpOnly,
@@ -84,7 +97,6 @@ export class AuthController {
             });
 
             const redirectUrl = `${this.configService.get('app.corsOrigin')}/auth/success`;
-            logger.log("redirecting to..", redirectUrl);
 
             return res.redirect(redirectUrl);
         } else {
@@ -94,9 +106,7 @@ export class AuthController {
 
     @Get('verify')
     async verifyAuth(@Req() req: Request) {
-        const logger = new Logger('VerifyAuth');
         const { user } = req;
-        logger.log("user", user);
         return user;
     }
 

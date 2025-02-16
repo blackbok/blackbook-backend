@@ -1,18 +1,17 @@
-import { Logger, Module, OnModuleInit } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { cloudinaryConfig } from "src/config/cloudinary.config";
+import { Logger, Module, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { cloudinaryConfig } from 'src/config/cloudinary.config';
 
 @Module({
-    imports: [
-    ],
+  imports: [],
 })
 export class CloudinaryModule implements OnModuleInit {
-    private readonly logger = new Logger(CloudinaryModule.name);
+  private readonly logger = new Logger(CloudinaryModule.name);
 
-    constructor(private readonly configService: ConfigService) { }
+  constructor(private readonly configService: ConfigService) {}
 
-    async onModuleInit() {
-        await cloudinaryConfig(this.configService);
-        this.logger.log('Cloudinary connected successfully!');
-    }
+  async onModuleInit() {
+    await cloudinaryConfig(this.configService);
+    this.logger.log('Cloudinary connected successfully!');
+  }
 }
