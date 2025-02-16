@@ -16,7 +16,6 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-
   // Enable CORS
   app.enableCors({
     origin: configService.get('app.corsOrigin'),
@@ -24,32 +23,36 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.use(session({
-    secret: configService.get<string>('app.sessionSecret') || 'secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: configService.get<string>('app.env') === 'production',
-      sameSite: configService.get<string>('app.env') === 'production' ? 'none' : 'lax',
-      httpOnly: true,
-      maxAge: 60 * 60 * 1000 // 1 hour
-    },
-    store: MongoStore.create({
-      mongoUrl: `${databaseConfig.database.monogodb.uri}`,
-      collectionName: 'sessions'
-    })
-  }))
-
-
-  app.enableVersioning(
-    {
-      type: VersioningType.URI,
-      prefix: 'api/v',
-    }
+  app.use(
+    session({
+      secret: configService.get<string>('app.sessionSecret') || 'secret',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: configService.get<string>('app.env') === 'production',
+        sameSite:
+          configService.get<string>('app.env') === 'production'
+            ? 'none'
+            : 'lax',
+        httpOnly: true,
+        maxAge: 60 * 60 * 1000, // 1 hour
+      },
+      store: MongoStore.create({
+        mongoUrl: `${databaseConfig.database.monogodb.uri}`,
+        collectionName: 'sessions',
+      }),
+    }),
   );
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig)
-  SwaggerModule.setup('api/docs', app, document);
+  app.enableVersioning({
+    type: VersioningType.URI,
+    prefix: 'api/v',
+  });
+
+  if (configService.get<string>('app.env') === 'development') {
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = configService.get<number>('app.port') || 3000;
   await app.listen(port, () => {

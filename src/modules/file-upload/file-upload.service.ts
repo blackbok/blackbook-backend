@@ -1,56 +1,117 @@
-import { Injectable, BadRequestException, Logger } from "@nestjs/common";
-import { v2 as cloudinary, UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  v2 as cloudinary,
+  UploadApiErrorResponse,
+  UploadApiResponse,
+} from 'cloudinary';
 import * as streamifier from 'streamifier';
 
+type FileType = 'image' | 'pdf';
+
 @Injectable()
-
 export class FileUploadService {
-    private logger = new Logger('FileUploadService');
-    async uploadImageToCloudinary(file: Express.Multer.File): Promise<string> {
-        this.logger.debug("uploading image to cloudinary");
-        return new Promise(async (resolve, reject) => {
-            try {
-                if (!file) {
-                    throw new BadRequestException('File must be provided');
-                }
-                // this.logger.log("file", file);
-                // console.log("file", file);
+  private readonly logger = new Logger(FileUploadService.name);
 
-                const timestamp = Date.now();
-                // const extension = file.originalname.split('.').pop();
-                const fileName = `${timestamp}-${file.originalname
-                    .split(' ')
-                    .join('-')
-                    .replace(/\.[^/.]+$/, '')}`;
+  private getUploadConfig(fileType: FileType, fileName: string) {
+    const baseConfig = {
+      resource_type: 'auto' as const,
+      use_filename: true,
+      unique_filename: true,
+      public_id: fileName,
+    };
 
-                const stream = streamifier.createReadStream(file.buffer);
-                // Upload the stream to Cloudinary
-                const uploadStream = cloudinary.uploader.upload_stream({
-                    resource_type: "auto",
-                    folder: "blackbook",
-                    use_filename: true,
-                    unique_filename: true,
-                    public_id: fileName,
-                }, (error, result) => {
-                    if (error) {
-                        this.logger.error('Error uploading to Cloudinary', error);
-                        reject(new BadRequestException("Failed to upload image to cloudinary"));
-                    } else {
-                        this.logger.log('Upload successful', result);  // Log the result here
-                        if (result?.secure_url) {
-                            resolve(result.secure_url);  // Resolve with the secure URL
-                        } else {
-                            reject(new BadRequestException("Failed to upload image to cloudinary"));
-                        }
-                    }
-                });
+    return {
+      ...baseConfig,
+      folder: `blackbook/${fileType}s`, // images or pdfs
+    };
+  }
 
-                // Pipe the stream to Cloudinary
-                stream.pipe(uploadStream);
-            } catch (error) {
-                this.logger.error(error);
-                throw new BadRequestException("Failed to upload image to cloudinary");
-            }
-        });
+  private createFileName(file: Express.Multer.File): string {
+    const timestamp = Date.now();
+    return `${timestamp}-${file.originalname
+      .split(' ')
+      .join('-')
+      .replace(/\.[^/.]+$/, '')}`;
+  }
+
+  private uploadToCloudinary(
+    file: Express.Multer.File,
+    fileType: FileType,
+  ): Promise<string> {
+    if (!file) {
+      throw new BadRequestException(`${fileType} file must be provided`);
     }
+
+    if (!file.buffer) {
+      throw new BadRequestException(`Invalid ${fileType} file format`);
+    }
+
+    this.logger.debug(`Uploading ${fileType} to cloudinary`);
+
+    return new Promise((resolve, reject) => {
+      try {
+        const fileName = this.createFileName(file);
+        const uploadConfig = this.getUploadConfig(fileType, fileName);
+        const stream = streamifier.createReadStream(file.buffer);
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadConfig,
+          (
+            error: UploadApiErrorResponse | undefined,
+            result: UploadApiResponse | undefined,
+          ) => {
+            if (error) {
+              this.logger.error(
+                `Error uploading ${fileType} to Cloudinary`,
+                error,
+              );
+              reject(
+                new BadRequestException(
+                  `Failed to upload ${fileType} to cloudinary: ${error.message}`,
+                ),
+              );
+              return;
+            }
+
+            if (!result?.secure_url) {
+              reject(
+                new BadRequestException(
+                  `Failed to get secure URL for uploaded ${fileType}`,
+                ),
+              );
+              return;
+            }
+
+            // this.logger.log(`${fileType} upload successful`, {
+            //     fileName,
+            //     url: result.secure_url
+            // });
+            resolve(result.secure_url);
+          },
+        );
+
+        stream.pipe(uploadStream).on('error', (error) => {
+          this.logger.error(`Stream error while uploading ${fileType}`, error);
+          reject(
+            new BadRequestException(`Failed to process ${fileType} stream`),
+          );
+        });
+      } catch (error) {
+        this.logger.error(`Unexpected error in ${fileType} upload`, error);
+        reject(
+          new BadRequestException(
+            `Unexpected error during ${fileType} upload: ${error.message}`,
+          ),
+        );
+      }
+    });
+  }
+
+  async uploadImageToCloudinary(file: Express.Multer.File): Promise<string> {
+    return this.uploadToCloudinary(file, 'image');
+  }
+
+  async uploadPdfToCloudinary(file: Express.Multer.File): Promise<string> {
+    return this.uploadToCloudinary(file, 'pdf');
+  }
 }

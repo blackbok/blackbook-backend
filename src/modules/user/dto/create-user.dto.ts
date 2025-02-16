@@ -1,152 +1,193 @@
-import { IsString, IsEmail, IsOptional, IsEnum, IsArray, IsObject, IsDate } from 'class-validator';
-import { AuthProvider, Role } from "src/common/utils/enum/Role";
-
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsArray,
+  IsObject,
+  IsDate,
+} from 'class-validator';
+import { AuthProvider, Role } from 'src/common/utils/enum/Role';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AuthMetadataDto {
-    @IsString()
-    @IsOptional()
-    refreshToken?: string; // Optional: Refresh token
+  @ApiPropertyOptional({ description: 'Refresh token' })
+  @IsString()
+  @IsOptional()
+  refreshToken?: string; // Optional: Refresh token
 
-    @IsString()
-    @IsOptional()
-    acessToken?: string; // Optional: Access token
+  @ApiPropertyOptional({ description: 'Access token' })
+  @IsString()
+  @IsOptional()
+  acessToken?: string; // Optional: Access token
 
-    @IsDate()
-    @IsOptional()
-    acessTokenExpiresAt?: Date; // Optional: Access token expiry date
+  @ApiPropertyOptional({ description: 'Access token expiry date' })
+  @IsDate()
+  @IsOptional()
+  acessTokenExpiresAt?: Date; // Optional: Access token expiry date
 
-    @IsDate()
-    @IsOptional()
-    refreshTokenExpiresAt?: Date; // Optional: Refresh token expiry date
+  @ApiPropertyOptional({ description: 'Refresh token expiry date' })
+  @IsDate()
+  @IsOptional()
+  refreshTokenExpiresAt?: Date; // Optional: Refresh token expiry date
 
-    @IsEnum(AuthProvider)
-    authProvider: string; // Authentication provider
+  @ApiProperty({ description: 'Authentication provider' })
+  @IsEnum(AuthProvider)
+  authProvider: string; // Authentication provider
 
-    @IsString()
-    providerId?: string; // Optional: Provider ID
+  @ApiPropertyOptional({ description: 'Provider ID' })
+  @IsString()
+  providerId?: string; // Optional: Provider ID
 }
 
-
 export class SocialMediaDto {
-    @IsString()
-    @IsOptional()
-    linkedIn?: string; // Optional: LinkedIn profile
+  @ApiPropertyOptional({ description: 'LinkedIn profile' })
+  @IsString()
+  @IsOptional()
+  linkedIn?: string; // Optional: LinkedIn profile
 
-    @IsString()
-    @IsOptional()
-    github?: string; // Optional: GitHub profile
+  @ApiPropertyOptional({ description: 'GitHub profile' })
+  @IsString()
+  @IsOptional()
+  github?: string; // Optional: GitHub profile
 
-    @IsString()
-    @IsOptional()
-    twitter?: string; // Optional: Twitter handle
+  @ApiPropertyOptional({ description: 'Twitter handle' })
+  @IsString()
+  @IsOptional()
+  twitter?: string; // Optional: Twitter handle
 
-    @IsString()
-    @IsOptional()
-    instagram?: string; // Optional: Instagram handle
+  @ApiPropertyOptional({ description: 'Instagram handle' })
+  @IsString()
+  @IsOptional()
+  instagram?: string; // Optional: Instagram handle
 
-    @IsString()
-    @IsOptional()
-    facebook?: string; // Optional: Facebook profile
+  @ApiPropertyOptional({ description: 'Facebook profile' })
+  @IsString()
+  @IsOptional()
+  facebook?: string; // Optional: Facebook profile
 
-    @IsString()
-    @IsOptional()
-    website?: string; // Optional: Personal website
+  @ApiPropertyOptional({ description: 'Personal website' })
+  @IsString()
+  @IsOptional()
+  website?: string; // Optional: Personal website
 
-    @IsString()
-    @IsOptional()
-    medium?: string; // Optional: Medium profile
+  @ApiPropertyOptional({ description: 'Medium profile' })
+  @IsString()
+  @IsOptional()
+  medium?: string; // Optional: Medium profile
 
-    @IsString()
-    @IsOptional()
-    behance?: string; // Optional: Behance profile
+  @ApiPropertyOptional({ description: 'Behance profile' })
+  @IsString()
+  @IsOptional()
+  behance?: string; // Optional: Behance profile
 }
 
 export class AddressDto {
-    @IsString()
-    @IsOptional()
-    city?: string; // Optional: City
+  @ApiPropertyOptional({ description: 'City' })
+  @IsString()
+  @IsOptional()
+  city?: string; // Optional: City
 
-    @IsString()
-    @IsOptional()
-    state?: string; // Optional: State
+  @ApiPropertyOptional({ description: 'State' })
+  @IsString()
+  @IsOptional()
+  state?: string; // Optional: State
 
-    @IsString()
-    @IsOptional()
-    country?: string; // Optional: Country
+  @ApiPropertyOptional({ description: 'Country' })
+  @IsString()
+  @IsOptional()
+  country?: string; // Optional: Country
 
-    @IsString()
-    @IsOptional()
-    pincode?: string; // Optional: Pincode
+  @ApiPropertyOptional({ description: 'Pincode' })
+  @IsString()
+  @IsOptional()
+  pincode?: string; // Optional: Pincode
 }
 
 export class MetadataDto {
-    @IsArray()
-    @IsOptional()
-    favouriteProjects?: string[]; // Optional: List of favorite project IDs
+  @ApiPropertyOptional({ description: 'Favorite projects' })
+  @IsArray()
+  @IsOptional()
+  favouriteProjects?: string[]; // Optional: List of favorite project IDs
 
-    @IsString()
-    @IsOptional()
-    bio?: string; // Optional: User bio
+  @ApiPropertyOptional({ description: 'Bio' })
+  @IsString()
+  @IsOptional()
+  bio?: string; // Optional: User bio
 
-    @IsString()
-    @IsOptional()
-    gender?: string; // Optional: User gender
+  @ApiPropertyOptional({ description: 'Gender' })
+  @IsString()
+  @IsOptional()
+  gender?: string; // Optional: User gender
 
-    @IsString()
-    @IsOptional()
-    profilePicUrl?: string; // Optional: Profile picture URL
+  @ApiPropertyOptional({ description: 'Profiler picture url' })
+  @IsString()
+  @IsOptional()
+  profilePicUrl?: string; // Optional: Profile picture URL
 
-    @IsString()
-    @IsOptional()
-    phone?: string; // Optional: Phone number
+  @ApiPropertyOptional({ description: 'Phone number' })
+  @IsString()
+  @IsOptional()
+  phone?: string; // Optional: Phone number
 
-    @IsString()
-    @IsOptional()
-    college?: string; // Optional: College name
+  @ApiPropertyOptional({ description: 'College name' })
+  @IsString()
+  @IsOptional()
+  college?: string; // Optional: College name
 
-    @IsString()
-    @IsOptional()
-    degree?: string; // Optional: Degree
+  @ApiPropertyOptional({ description: 'Degree' })
+  @IsString()
+  @IsOptional()
+  degree?: string; // Optional: Degree
 
-    @IsString()
-    @IsOptional()
-    stream?: string; // Optional: Stream
+  @ApiPropertyOptional({ description: 'Stream' })
+  @IsString()
+  @IsOptional()
+  stream?: string; // Optional: Stream
 
-    @IsObject()
-    @IsOptional()
-    address?: AddressDto; // Optional: Address details
+  @ApiPropertyOptional({ description: 'Address details' })
+  @IsObject()
+  @IsOptional()
+  address?: AddressDto; // Optional: Address details
 
-    @IsArray()
-    @IsOptional()
-    followers?: string[]; // Optional: List of follower IDs
+  @ApiPropertyOptional({ description: 'Followers' })
+  @IsArray()
+  @IsOptional()
+  followers?: string[]; // Optional: List of follower IDs
 }
 
-
-
 export class CreateUserDto {
-    @IsString()
-    name: string; // User's full name
+  @ApiProperty({ description: 'Full name' })
+  @IsString()
+  name: string; // User's full name
 
-    @IsString()
-    username: string; // Unique username
+  @ApiProperty({ description: 'Unique username' })
+  @IsString()
+  username: string; // Unique username
 
-    @IsEmail()
-    email: string; // User's email address
+  @ApiProperty({ description: 'Email address' })
+  @IsEmail()
+  email: string; // User's email address
 
-    @IsString()
-    passwordHash: string; // Password hash
+  @ApiProperty({ description: 'Password hash' })
+  @IsString()
+  passwordHash: string; // Password hash
 
-    @IsEnum(Role)
-    @IsOptional()
-    role?: string; // User's role, defaults to Role.USER
+  @ApiPropertyOptional({ description: 'Role' })
+  @IsEnum(Role)
+  @IsOptional()
+  role?: string; // User's role, defaults to Role.USER
 
-    @IsObject()
-    authMetadata: AuthMetadataDto; // Authentication metadata
+  @ApiPropertyOptional({ description: 'Authentication metadata' })
+  @IsObject()
+  authMetadata: AuthMetadataDto; // Authentication metadata
 
-    @IsObject()
-    metadata: MetadataDto; // Additional metadata
+  @ApiPropertyOptional({ description: 'Additional metadata' })
+  @IsObject()
+  metadata: MetadataDto; // Additional metadata
 
-    @IsObject()
-    @IsOptional()
-    socialMedia?: SocialMediaDto; // Optional: Social media details
+  @ApiPropertyOptional({ description: 'Social media details' })
+  @IsObject()
+  @IsOptional()
+  socialMedia?: SocialMediaDto; // Optional: Social media details
 }

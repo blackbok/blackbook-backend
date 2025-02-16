@@ -9,6 +9,8 @@ import { FeedbackModule } from './modules/project/feedback/feedback.module';
 import { VerifyAuthMiddleware } from './common/middleware/verify-auth.middleware';
 import { FileUploadModule } from './modules/file-upload/file-upload.module';
 import { CloudinaryModule } from './infra/cloudinary/cloudinary.module';
+import { DatastoreModule } from './modules/datastore/datastore.module';
+import { TestimonialModule } from './modules/testimonial/testimonial.module';
 
 @Module({
   imports: [
@@ -21,11 +23,22 @@ import { CloudinaryModule } from './infra/cloudinary/cloudinary.module';
     ProjectModule,
     FeedbackModule,
     FileUploadModule,
+    DatastoreModule,
+    TestimonialModule,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(VerifyAuthMiddleware).forRoutes('auth/verify', 'auth/logout')
-    consumer.apply(VerifyAuthMiddleware).forRoutes('project/create', 'project/update', 'project/delete','project/user/:userId')
+    consumer
+      .apply(VerifyAuthMiddleware)
+      .forRoutes('auth/verify', 'auth/logout', 'user/update/:userId');
+    consumer
+      .apply(VerifyAuthMiddleware)
+      .forRoutes(
+        'project/create',
+        'project/update',
+        'project/delete',
+        'project/user/:userId',
+      );
   }
 }
